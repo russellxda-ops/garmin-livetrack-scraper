@@ -1,0 +1,13 @@
+{
+  "name": "garmin-livetrack-scraper",
+  "version": "1.0.0",
+  "description": "Puppeteer service to scrape Garmin LiveTrack data",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "puppeteer": "^22.0.0"
+  }
+}
