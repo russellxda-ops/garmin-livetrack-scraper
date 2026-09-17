@@ -42,41 +42,64 @@ browser = await puppeteer.launch({
 await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
     // DIAGNOSTIC: Log what the page actually contains
-await new Promise(resolve => setTimeout(resolve, 10000)); // wait 10s for JS to render
+await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
-const pageContent = await page.evaluate(() => {
+// Wait for either the triplet or an 'Average Pace' label to appear
+await page.waitForFunction(
+  () => {
+    const t = document.body.innerText;
+    return t.includes(' /mi') || t.includes(' /km') || t.includes('Average Pace');
+  },
+  { timeout: 30000 }
+);
+
+// Extra buffer for JS-rendered values to settle
+await new Promise(resolve => setTimeout(resolve, 3000));
+
+const scrapedData = await page.evaluate(() => {
+  const bodyText = document.body.innerText;
+
+  // --- PACE ---
+  let averagePace = null;
+  let paceUnit = null;
+
+  // Attempt 1: labelled "Average Pace" (may appear during live runs)
+  let paceMatch = bodyText.match(/Average Pace[:\s]*([\d:]+)\s*\/\s*(mi|km)/i);
+  if (paceMatch) {
+    averagePace = paceMatch[1];
+    paceUnit = paceMatch[2];
+  } else {
+    // Attempt 2: unlabelled triplet (distance / duration / pace)
+    // Pattern: "6.29 mi\n0:57:54\n9:12 /mi"
+    const tripletMatch = bodyText.match(
+      /\d+(?:\.\d+)?\s*(?:mi|km)\s*\n\s*\d+:\d{2}:\d{2}\s*\n\s*(\d+:\d{2})\s*\/\s*(mi|km)/i
+    );
+    if (tripletMatch) {
+      averagePace = tripletMatch[1];
+      paceUnit = tripletMatch[2];
+    }
+  }
+
+  // --- START TIME ---
+  // Handles both "Started Sat @ 7:07 AM" and "Started @ 12:11 PM"
+  const startMatch = bodyText.match(
+    /Started\s+(?:(\w{3})\s+)?@\s+(\d{1,2}:\d{2}\s*[AP]M)/i
+  );
+
+  // --- STATUS FLAGS ---
+  const isEnded = bodyText.includes('Session Complete') || bodyText.includes('has ended');
+
   return {
-    title: document.title,
-    url: window.location.href,
-    bodyTextSample: document.body.innerText.substring(0, 2000),
-    hasAveragePace: document.body.innerText.includes('Average Pace'),
-    hasStarted: document.body.innerText.includes('Started'),
-    hasEnded: document.body.innerText.toLowerCase().includes('ended'),
-    hasExpired: document.body.innerText.toLowerCase().includes('expired'),
+    averagePace: averagePace,
+    paceUnit: paceUnit,
+    startedDay: startMatch ? startMatch[1] : null,
+    startedTime: startMatch ? startMatch[2] : null,
+    isEnded: isEnded,
   };
 });
 
-console.log("=== PAGE DIAGNOSTIC ===");
-console.log(JSON.stringify(pageContent, null, 2));
-console.log("=== END DIAGNOSTIC ===");
-
-// Return the diagnostic instead of trying to scrape
-return res.json(pageContent);
-
-    const scrapedData = await page.evaluate(() => {
-      const bodyText = document.body.innerText;
-      const paceMatch = bodyText.match(/Average Pace[:\s]*([\d:]+)\s*\/km/i);
-      const startMatch = bodyText.match(/Started\s+(\w{3})\s+@\s+(\d{1,2}:\d{2}\s*[AP]M)/i);
-
-      return {
-        averagePace: paceMatch ? paceMatch[1] : null,
-        startedDay: startMatch ? startMatch[1] : null,
-        startedTime: startMatch ? startMatch[2] : null,
-      };
-    });
-
-    await browser.close();
-
+await browser.close();
+res.json(scrapedData);
     res.json(scrapedData);
   } catch (error) {
     console.error('Scraping failed:', error);
