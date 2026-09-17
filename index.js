@@ -39,7 +39,7 @@ browser = await puppeteer.launch({
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     );
 
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
+await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
     // DIAGNOSTIC: Log what the page actually contains
 await new Promise(resolve => setTimeout(resolve, 10000)); // wait 10s for JS to render
