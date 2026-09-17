@@ -20,17 +20,19 @@ app.post('/scrape', async (req, res) => {
 
   let browser;
   try {
-    browser = await puppeteer.launch({
-      headless: 'new',
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--single-process',
-        '--no-zygote',
-        '--disable-gpu',
-      ],
-    });
+browser = await puppeteer.launch({
+  headless: 'new',
+  executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || 
+                  '/opt/render/project/src/.puppeteer-cache/chrome/linux-127.0.6533.88/chrome-linux64/chrome',
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',
+    '--single-process',
+    '--no-zygote',
+    '--disable-gpu',
+  ],
+});
 
     const page = await browser.newPage();
     await page.setUserAgent(
