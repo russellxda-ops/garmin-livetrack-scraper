@@ -41,11 +41,27 @@ browser = await puppeteer.launch({
 
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
 
-    // Wait for the pace text to appear (max 30s)
-    await page.waitForFunction(
-      () => document.body.innerText.includes('Average Pace'),
-      { timeout: 30000 }
-    );
+    // DIAGNOSTIC: Log what the page actually contains
+await new Promise(resolve => setTimeout(resolve, 10000)); // wait 10s for JS to render
+
+const pageContent = await page.evaluate(() => {
+  return {
+    title: document.title,
+    url: window.location.href,
+    bodyTextSample: document.body.innerText.substring(0, 2000),
+    hasAveragePace: document.body.innerText.includes('Average Pace'),
+    hasStarted: document.body.innerText.includes('Started'),
+    hasEnded: document.body.innerText.toLowerCase().includes('ended'),
+    hasExpired: document.body.innerText.toLowerCase().includes('expired'),
+  };
+});
+
+console.log("=== PAGE DIAGNOSTIC ===");
+console.log(JSON.stringify(pageContent, null, 2));
+console.log("=== END DIAGNOSTIC ===");
+
+// Return the diagnostic instead of trying to scrape
+return res.json(pageContent);
 
     const scrapedData = await page.evaluate(() => {
       const bodyText = document.body.innerText;
