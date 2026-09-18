@@ -104,7 +104,7 @@ console.log(rawText);
 console.log("=== END RAW PAGE TEXT ===");
     
 
-wait browser.close();
+await browser.close();
 res.json(scrapedData);
     res.json(scrapedData);
   } catch (error) {
