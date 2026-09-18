@@ -85,8 +85,9 @@ app.post('/scrape', async (req, res) => {
       );
 
       // --- STATUS FLAGS ---
-      const isEnded =
-        bodyText.includes('Session Complete') || bodyText.includes('has ended');
+// Reliable detection: a finished run shows "Ended @ HH:MM",
+// a live run shows "Updated @ HH:MM".
+const isEnded = /Ended\s+@\s+\d{1,2}:\d{2}\s*[AP]M/i.test(bodyText);
 
       return {
         averagePace: averagePace,
