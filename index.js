@@ -97,8 +97,14 @@ const scrapedData = await page.evaluate(() => {
     isEnded: isEnded,
   };
 });
+// DIAGNOSTIC: Log the first 300 characters of the page text to Render's logs
+const rawText = await page.evaluate(() => document.body.innerText.substring(0, 300));
+console.log("=== RAW PAGE TEXT (first 300 chars) ===");
+console.log(rawText);
+console.log("=== END RAW PAGE TEXT ===");
+    
 
-await browser.close();
+wait browser.close();
 res.json(scrapedData);
     res.json(scrapedData);
   } catch (error) {
